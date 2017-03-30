@@ -45,6 +45,8 @@ void setup() {
 } 
 
 int counter = 0;
+bool A0_read = LOW;
+bool A1_read = LOW;
 bool last_B0_read = LOW;
 bool last_B1_read = LOW;
 
@@ -56,20 +58,50 @@ void loop(){
 /* See this expanded function to get a better understanding of the
  * meanings of the four possible (pinA, pinB) value pairs:
  */
+ //right wheel
 void doEncoder0(){
+    A0_read = digitalRead(encoder0PinA);
     bool current_B = digitalRead(encoder0PinB);
     if (current_B != last_B0_read) {
-      encoder0Pos = encoder0Pos + 1;
-      last_B0_read = current_B;
+        if(A0_read == LOW && current_B == LOW){
+          Serial.println ("CW");
+          encoder0Pos = encoder0Pos - 1;
+        } else if (A0_read == LOW && current_B == HIGH){
+          Serial.println ("CCW");
+          encoder0Pos = encoder0Pos + 1;
+        } else if (A0_read == HIGH && current_B == LOW){
+          Serial.println ("CCW");
+          encoder0Pos = encoder0Pos + 1;
+        } else {
+          Serial.println ("CW");
+          encoder0Pos = encoder0Pos - 1;
+        }
+          
+        last_B0_read = current_B;
     }
     Serial.println (encoder0Pos, DEC);
 }
 
+//left wheel
 void doEncoder1(){
+    A1_read = digitalRead(encoder1PinA);
     bool current_B = digitalRead(encoder1PinB);
-    if (current_B != last_B0_read) {
-      encoder1Pos = encoder1Pos + 1;
-      last_B1_read = current_B;
+    if (current_B != last_B1_read) {
+      if(A1_read == LOW && current_B == LOW){
+          Serial.println ("CCW");
+          encoder1Pos = encoder1Pos - 1;
+        } else if (A1_read == LOW && current_B == HIGH){
+          Serial.println ("CW");
+          encoder1Pos = encoder1Pos + 1;
+        } else if (A1_read == HIGH && current_B == LOW){
+          Serial.println ("CW");
+          encoder1Pos = encoder1Pos + 1;
+        } else {
+          Serial.println ("CCW");
+          encoder1Pos = encoder1Pos - 1;
+        }
+        
+        last_B1_read = current_B;
     }
     Serial.println (encoder1Pos, DEC);
 }
