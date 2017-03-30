@@ -122,8 +122,8 @@ double theta = 0;
 double xLocation = 0;
 double yLocation = 0;
 const int encoderCounts = 32;
-const double CIRCUMFERENCE = 10; //PLACEHOLDER: circumference of one wheel
-const double WHEELBASE = 20; //PLACEHOLDER: distance between wheels and center (must be in same units as circumference, and input for challenge)
+const double CIRCUMFERENCE = 17.9542020153; //cm circumference of one wheel
+const double WHEELBASE = 10.16; //cm distance between wheels and center (must be in same units as circumference, and input for challenge)
 const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 
 
@@ -170,9 +170,14 @@ void loop() {
     digitalWrite(LED_PIN, blinkState);
 
     if (counter > LOC_FREQ){
+      
       //encoder stuff (LOTS OF PLACEHOLDERS)
       int leftEncoderCounts = encoder1Pos; //get encoder counts on left wheel
       int rightEncoderCounts = encoder0Pos; //get encoder counts on right wheel
+
+      encoder0Pos = 0;
+      encoder1Pos = 0;
+      
       double distLeft = 2 * PI * leftEncoderCounts / (encoderCounts/CIRCUMFERENCE);
       double distRight = 2 * PI * rightEncoderCounts / (encoderCounts/CIRCUMFERENCE);
   
