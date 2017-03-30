@@ -58,7 +58,7 @@ void loop(){
 /* See this expanded function to get a better understanding of the
  * meanings of the four possible (pinA, pinB) value pairs:
  */
- //right wheel
+//right wheel
 void doEncoder0(){
     A0_read = digitalRead(encoder0PinA);
     bool current_B = digitalRead(encoder0PinB);

@@ -6,11 +6,17 @@
 #include "DualMC33926MotorShield.h"
 
 MPU6050 mpu;
-
 DualMC33926MotorShield md;
 
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
+#define encoder0PinA  2
+#define encoder0PinB  4
+#define encoder1PinA  3
+#define encoder1PinB  5
+
 bool blinkState = false;
+void doEncoder0();
+void doEncoder1();
 
 // ================================================================
 // ===                 FAULT DETECTION ROUTINE                  ===
@@ -57,7 +63,21 @@ void setup() {
     mpu.setYGyroOffset(76);
     mpu.setZGyroOffset(-85);
     mpu.setZAccelOffset(1788); // 1688 factory default for my test chip
-    
+
+    //encoder setup
+    //setup encoder 0
+    pinMode(encoder0PinA, INPUT); 
+    digitalWrite(encoder0PinA, HIGH);       // turn on pull-up resistor
+    pinMode(encoder0PinB, INPUT); 
+    digitalWrite(encoder0PinB, HIGH);       // turn on pull-up resistor
+    attachInterrupt(0, doEncoder0, CHANGE);  // encoder pin on interrupt 0 - pin 2
+    //setup encoder 1
+    pinMode(encoder1PinA, INPUT); 
+    digitalWrite(encoder1PinA, HIGH);       // turn on pull-up resistor
+    pinMode(encoder1PinB, INPUT); 
+    digitalWrite(encoder1PinB, HIGH);       // turn on pull-up resistor
+    attachInterrupt(1, doEncoder1, CHANGE);  // encoder pin on interrupt 0 - pin 2
+
     // configure LED for output
     pinMode(LED_PIN, OUTPUT);
 
@@ -88,8 +108,16 @@ int16_t ax, ay, az;
 int16_t gx, gy, gz;
 
 //IR VALUES
+volatile int encoder0Pos = 0;
+volatile int encoder1Pos = 0;
+bool A0_read = LOW;
+bool A1_read = LOW;
+bool last_B0_read = LOW;
+bool last_B1_read = LOW;
 
 //ENCODER VALUES
+unsigned int counter = 0;
+const unsigned int LOC_FREQ = 10000;
 double theta = 0;
 double xLocation = 0;
 double yLocation = 0;
@@ -97,6 +125,8 @@ const int encoderCounts = 32;
 const double CIRCUMFERENCE = 10; //PLACEHOLDER: circumference of one wheel
 const double WHEELBASE = 20; //PLACEHOLDER: distance between wheels and center (must be in same units as circumference, and input for challenge)
 const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
+
+
 void loop() {
   
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
@@ -139,31 +169,76 @@ void loop() {
     blinkState = !blinkState;
     digitalWrite(LED_PIN, blinkState);
 
-    //encoder stuff (LOTS OF PLACEHOLDERS)
-    int leftEncoderCounts = 0; //PLACEHOLDER get encoder counts on left wheel
-    int rightEncoderCounts = 0; //PLACEHOLDER get encoder counts on right wheel
-    double distLeft = 2 * PI * leftEncoderCounts / (encoderCounts/CIRCUMFERENCE);
-    double distRight = 2 * PI * rightEncoderCounts / (encoderCounts/CIRCUMFERENCE);
+    if (counter > LOC_FREQ){
+      //encoder stuff (LOTS OF PLACEHOLDERS)
+      int leftEncoderCounts = encoder1Pos; //get encoder counts on left wheel
+      int rightEncoderCounts = encoder0Pos; //get encoder counts on right wheel
+      double distLeft = 2 * PI * leftEncoderCounts / (encoderCounts/CIRCUMFERENCE);
+      double distRight = 2 * PI * rightEncoderCounts / (encoderCounts/CIRCUMFERENCE);
+  
+      double distAverage = (distLeft + distRight) / 2; //calcualte delta distance (for both wheels)
+      double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta 
+  
+      //add new values to global variable
+      theta = theta + thetaChange;
+      xLocation = xLocation + (distAverage * cos(theta));
+      yLocation = yLocation + (distAverage * sin(theta));
+  
+      Serial.print("[x = ");
+      Serial.print(xLocation);
+      Serial.print(", y = ");
+      Serial.print(yLocation);
+      Serial.print(", theta = ");
+      Serial.print(theta);
+      Serial.println("]");
+  
+      //adjust PWM for Y direction (forward backwards)
+      //PWM -= yLocation * MULTIPLIER //this is easy, just accelerate forward or back
 
-    double distAverage = (distLeft + distRight) / 2; //calcualte delta distance (for both wheels)
-    double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta 
+      counter = 0;
+    }
 
-    //add new values to global variable
-    theta = theta + thetaChange;
-    xLocation = xLocation + (distAverage * cos(theta));
-    yLocation = yLocation + (distAverage * sin(theta));
-
-    Serial.print("[x = ");
-    Serial.print(xLocation);
-    Serial.print(", y = ");
-    Serial.print(yLocation);
-    Serial.print(", theta = ");
-    Serial.print(theta);
-    Serial.println("]");
-
-    //adjust PWM for Y direction (forward backwards)
-    //PWM -= yLocation * MULTIPLIER //this is easy, just accelerate forward or back
-   
-    
-    
+    counter++;
 }
+
+
+
+//encoder functions
+//right wheel
+void doEncoder0(){
+    A0_read = digitalRead(encoder0PinA);
+    bool current_B = digitalRead(encoder0PinB);
+    if (current_B != last_B0_read) {
+        if(A0_read == LOW && current_B == LOW){
+          encoder0Pos = encoder0Pos - 1;
+        } else if (A0_read == LOW && current_B == HIGH){
+          encoder0Pos = encoder0Pos + 1;
+        } else if (A0_read == HIGH && current_B == LOW){
+          encoder0Pos = encoder0Pos + 1;
+        } else {
+          encoder0Pos = encoder0Pos - 1;
+        }
+          
+        last_B0_read = current_B;
+    }
+}
+//left wheel
+void doEncoder1(){
+    A1_read = digitalRead(encoder1PinA);
+    bool current_B = digitalRead(encoder1PinB);
+    if (current_B != last_B1_read) {
+      if(A1_read == LOW && current_B == LOW){
+          encoder1Pos = encoder1Pos - 1;
+        } else if (A1_read == LOW && current_B == HIGH){
+          encoder1Pos = encoder1Pos + 1;
+        } else if (A1_read == HIGH && current_B == LOW){
+          encoder1Pos = encoder1Pos + 1;
+        } else {
+          encoder1Pos = encoder1Pos - 1;
+        }
+        last_B1_read = current_B;
+    }
+}
+
+
+
