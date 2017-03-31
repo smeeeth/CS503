@@ -123,8 +123,8 @@ double theta = 0;
 double xLocation = 0;
 double yLocation = 0;
 const int encoderCounts = 32;
-const double CIRCUMFERENCE = 10; //PLACEHOLDER: circumference of one wheel
-const double WHEELBASE = 20; //PLACEHOLDER: distance between wheels and center (must be in same units as circumference, and input for challenge)
+const double CIRCUMFERENCE = 17.9542020153; //cm circumference of one wheel
+const double WHEELBASE = 10.16; //cm distance between wheels and center (must be in same units as circumference, and input for challenge)
 const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 
 //CLOCK VALUES
@@ -193,11 +193,53 @@ void loop() {
       pwm_r = PWMint;
     }
 
+<<<<<<< HEAD
     if (PWMint >= PWMMAX){
       PWMint = PWMMAX;
     }
     else if (PWMint <= -PWMMAX){
       PWMint = -PWMMAX;
+=======
+    md.setM1Speed(pwm_l);
+    md.setM2Speed(pwm_r); 
+
+    // blink LED to indicate activity
+    blinkState = !blinkState;
+    digitalWrite(LED_PIN, blinkState);
+
+    if (counter > LOC_FREQ){
+      
+      //encoder stuff (LOTS OF PLACEHOLDERS)
+      int leftEncoderCounts = encoder1Pos; //get encoder counts on left wheel
+      int rightEncoderCounts = encoder0Pos; //get encoder counts on right wheel
+
+      encoder0Pos = 0;
+      encoder1Pos = 0;
+      
+      double distLeft = 2 * PI * leftEncoderCounts / (encoderCounts/CIRCUMFERENCE);
+      double distRight = 2 * PI * rightEncoderCounts / (encoderCounts/CIRCUMFERENCE);
+  
+      double distAverage = (distLeft + distRight) / 2; //calcualte delta distance (for both wheels)
+      double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta 
+  
+      //add new values to global variable
+      theta = theta + thetaChange;
+      xLocation = xLocation + (distAverage * cos(theta));
+      yLocation = yLocation + (distAverage * sin(theta));
+  
+      Serial.print("[x = ");
+      Serial.print(xLocation);
+      Serial.print(", y = ");
+      Serial.print(yLocation);
+      Serial.print(", theta = ");
+      Serial.print(theta);
+      Serial.println("]");
+  
+      //adjust PWM for Y direction (forward backwards)
+      //PWM -= yLocation * MULTIPLIER //this is easy, just accelerate forward or back
+
+      counter = 0;
+>>>>>>> 2be6f2f0d5622822b1c4a6f90d4ec542302915b7
     }
 
     md.setM1Speed(pwm_r);
