@@ -70,15 +70,15 @@ void setup() {
 
     //encoder setup
     //setup encoder 0
-    pinMode(encoder0PinA, INPUT); 
+    pinMode(encoder0PinA, INPUT);
     digitalWrite(encoder0PinA, HIGH);       // turn on pull-up resistor
-    pinMode(encoder0PinB, INPUT); 
+    pinMode(encoder0PinB, INPUT);
     digitalWrite(encoder0PinB, HIGH);       // turn on pull-up resistor
     attachInterrupt(0, doEncoder0, CHANGE);  // encoder pin on interrupt 0 - pin 2
     //setup encoder 1
-    pinMode(encoder1PinA, INPUT); 
+    pinMode(encoder1PinA, INPUT);
     digitalWrite(encoder1PinA, HIGH);       // turn on pull-up resistor
-    pinMode(encoder1PinB, INPUT); 
+    pinMode(encoder1PinB, INPUT);
     digitalWrite(encoder1PinB, HIGH);       // turn on pull-up resistor
     attachInterrupt(1, doEncoder1, CHANGE);  // encoder pin on interrupt 1 - pin 3
 
@@ -123,8 +123,8 @@ double theta = 0;
 double xLocation = 0;
 double yLocation = 0;
 const int encoderCounts = 32;
-const double CIRCUMFERENCE = 17.9542020153; //cm circumference of one wheel
-const double WHEELBASE = 10.16; //cm distance between wheels and center (must be in same units as circumference, and input for challenge)
+const double CIRCUMFERENCE = 17.9542020153; //PLACEHOLDER: circumference of one wheel
+const double WHEELBASE = 10.16; //PLACEHOLDER: distance between wheels and center (must be in same units as circumference, and input for challenge)
 const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 
 //CLOCK VALUES
@@ -143,11 +143,19 @@ int error_left = 0;
 void loop() {
 
     int forward = 10;
+<<<<<<< HEAD
     
 //    unsigned long currentMillis = millis();
 //
 //    if(currentMillis - previousMillis > interval) {
 //      previousMillis = currentMillis;   
+=======
+
+//    unsigned long currentMillis = millis();
+//
+//    if(currentMillis - previousMillis > interval) {
+//      previousMillis = currentMillis;
+>>>>>>> 1298c51e4680f5417ce9090adf507317d447dcce
 //
 //      if (encoder0Pos < 8){
 //        error_right += 1;
@@ -194,11 +202,15 @@ void loop() {
     }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 1298c51e4680f5417ce9090adf507317d447dcce
     if (PWMint >= PWMMAX){
       PWMint = PWMMAX;
     }
     else if (PWMint <= -PWMMAX){
       PWMint = -PWMMAX;
+<<<<<<< HEAD
 =======
     md.setM1Speed(pwm_l);
     md.setM2Speed(pwm_r); 
@@ -244,6 +256,12 @@ void loop() {
 
     md.setM1Speed(pwm_r);
     md.setM2Speed(pwm_l); 
+=======
+    }
+
+    md.setM1Speed(pwm_r);
+    md.setM2Speed(pwm_l);
+>>>>>>> 1298c51e4680f5417ce9090adf507317d447dcce
 
 //    if (counter > LOC_FREQ){
 //      //encoder stuff (LOTS OF PLACEHOLDERS)
@@ -251,15 +269,26 @@ void loop() {
 //      int rightEncoderCounts = encoder0Pos; //get encoder counts on right wheel
 //      double distLeft = 2 * PI * leftEncoderCounts / (encoderCounts/CIRCUMFERENCE);
 //      double distRight = 2 * PI * rightEncoderCounts / (encoderCounts/CIRCUMFERENCE);
+<<<<<<< HEAD
 //  
 //      double distAverage = (distLeft + distRight) / 2; //calcualte delta distance (for both wheels)
 //      double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta 
 //  
+=======
+//
+//      double distAverage = (distLeft + distRight) / 2; //calcualte delta distance (for both wheels)
+//      double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta
+//
+>>>>>>> 1298c51e4680f5417ce9090adf507317d447dcce
 //      //add new values to global variable
 //      theta = theta + thetaChange;
 //      xLocation = xLocation + (distAverage * cos(theta));
 //      yLocation = yLocation + (distAverage * sin(theta));
+<<<<<<< HEAD
 //  
+=======
+//
+>>>>>>> 1298c51e4680f5417ce9090adf507317d447dcce
 //      Serial.print("[x = ");
 //      Serial.print(xLocation);
 //      Serial.print(", y = ");
@@ -267,7 +296,11 @@ void loop() {
 //      Serial.print(", theta = ");
 //      Serial.print(theta);
 //      Serial.println("]");
+<<<<<<< HEAD
 //  
+=======
+//
+>>>>>>> 1298c51e4680f5417ce9090adf507317d447dcce
 //      //adjust PWM for Y direction (forward backwards)
 //      //PWM -= yLocation * MULTIPLIER //this is easy, just accelerate forward or back
 //
@@ -296,7 +329,7 @@ void doEncoder0(){
         } else {
           encoder0Pos = encoder0Pos - 1;
         }
-          
+
         last_B0_read = current_B;
     }
 }
@@ -315,7 +348,11 @@ void doEncoder1(){
         } else {
           encoder1Pos = encoder1Pos - 1;
         }
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 1298c51e4680f5417ce9090adf507317d447dcce
         last_B1_read = current_B;
     }
 }
