@@ -102,10 +102,11 @@ int pwm_l = 0;
 int PWMMAX = 300;
 double theta_ref = 0.0; //0.035
 double gyro_off = 0.44;
-double Kangle = 0.2; //1.3
-double Bangle = 0.2; //0.7
+double Kangle = 0.7; //0.2
+double Bangle = 0.2; //0.2
 double PWMout = 0.0;
-int torque_stall = 38;  //get rid of this perhaps?
+int torque_stall_r = 37;  //get rid of this perhaps?
+int torque_stall_l = 36;  //get rid of this perhaps?
 bool use_torque = true;
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
@@ -127,16 +128,21 @@ const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 
 //CLOCK VALUES
 long previousMillis = 0;        // will store last time LED was updated
-long interval = 500;           // interval at which to blink (milliseconds)
+//long interval = 200;           // interval at which to blink (milliseconds)
+long interval = 200;
+int counter = 0;
 
 
 //testing vals
 int error_right = 0;
 int error_left = 0;
 double velocity = 0;
-double Kvelocity = 0.0005;
+double Kvelocity = 0.0001;
+double KvPWM = 0.01;
 const double THETA_MAX = 0.055;
 double deltaLean = 0;
+double deltaVelPWM = 0;
+bool stopping = false;
 
 
 
@@ -149,6 +155,12 @@ void loop() {
 
     if(currentMillis - previousMillis > interval) {
         previousMillis = currentMillis;
+
+        if(counter == 25){
+          theta_ref = 0.06;
+        }
+        
+        counter++;
   
         //encoder stuff
         int leftEncoderCounts = encoder1Pos;
@@ -157,38 +169,44 @@ void loop() {
         double distRight = 2 * PI * rightEncoderCounts / (ENCODERCOUNTS/CIRCUMFERENCE);
     
         double distAverage = (distLeft + distRight) / 2; //calcualte delta distance (for both wheels)
-        //double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta 
+        double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta 
     
         //add new values to global variable
-        //theta = theta + thetaChange;
+        theta = theta + thetaChange;
         xLocation = xLocation + (distAverage * cos(theta));
         yLocation = yLocation + (distAverage * sin(theta));
 
 
+        if (distAverage >= 4){
+          theta_ref = -0.03;
+          stopping = true;
+        }
+
+        if (stopping){
+          if (distAverage <= 2){
+            theta_ref = 0.0;
+          }
+        }
+
+
+//        Serial.print("Distance Avg: ");
+//        Serial.println(distAverage);
+
         //lean forward or backward
+//        deltaLean = -Kvelocity*distAverage;
+//        deltaVelPWM = -KvPWM*distAverage;
+//        theta_ref += deltaLean;
 
-        if (abs(distAverage) > 0.5){
-          deltaLean = Kvelocity*distAverage;
-        } else {
-          deltaLean = 0;
-        }
-        
-        theta_ref += deltaLean;
+//        if (theta_ref >= THETA_MAX){
+//          theta_ref = THETA_MAX;
+//        } else if (theta_ref <= -THETA_MAX){
+//          theta_ref = -THETA_MAX;
+//        }
 
-//        
-//        Serial.println(theta_ref);
-//        Serial.println(deltaLean);
-
-        if (theta_ref >= THETA_MAX){
-          theta_ref = THETA_MAX;
-        } else if (theta_ref <= -THETA_MAX){
-          theta_ref = -THETA_MAX;
-        }
-
-        Serial.print("Encoder 0: ");
-        Serial.print(encoder0Pos);
-        Serial.print(", Encoder 1: ");
-        Serial.println(encoder1Pos);
+//        Serial.print("Encoder 0: ");
+//        Serial.print(encoder0Pos);
+//        Serial.print(", Encoder 1: ");
+//        Serial.println(encoder1Pos);
 
         encoder0Pos = 0;
         encoder1Pos = 0;
@@ -203,8 +221,6 @@ void loop() {
 //
 //        //adjust PWM for Y direction (forward backwards)
 //        //PWM -= yLocation * MULTIPLIER //this is easy, just accelerate forward or back
-    } else {
-      
     }
 
 
@@ -214,17 +230,18 @@ void loop() {
     double angle_err = raw_angle + theta_ref;
     double angular_rate = ((double)gx)/131.0 - gyro_off;
     double deltaPWM = -Kangle*angle_err - Bangle*angular_rate;
-    PWMout += deltaPWM;
+    PWMout += deltaPWM;// + deltaVelPWM;
+    deltaVelPWM = 0;
 
     int PWMint = (int)PWMout;
 
     if (use_torque){
       if (PWMint > 0){
-        pwm_l = -PWMint - torque_stall;
-        pwm_r = PWMint + torque_stall;
+        pwm_l = -PWMint - torque_stall_l;
+        pwm_r = PWMint + torque_stall_r;
       } else {
-        pwm_l = -PWMint + torque_stall;
-        pwm_r = PWMint - torque_stall;
+        pwm_l = -PWMint + torque_stall_l;
+        pwm_r = PWMint - torque_stall_r;
       }
     } else {
       pwm_l = -PWMint;
