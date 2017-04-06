@@ -1,7 +1,7 @@
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-    #include "Wire.h"
+#include "Wire.h"
 #endif
 #include "DualMC33926MotorShield.h"
 
@@ -27,11 +27,11 @@ void doEncoder1();
 
 void stopIfFault()
 {
-  if (md.getFault())
-  {
-    Serial.println("fault");
-    while(1);
-  }
+    if (md.getFault())
+    {
+        Serial.println("fault");
+        while (1);
+    }
 }
 
 // ================================================================
@@ -40,12 +40,12 @@ void stopIfFault()
 
 void setup() {
     // join I2C bus (I2Cdev library doesn't do this automatically)
-    #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-        Wire.begin();
-        TWBR = 24; // 400kHz I2C clock (200kHz if CPU is 8MHz)---->Two Wire Bit Rate Generator
-    #elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
-        Fastwire::setup(400, true);
-    #endif
+#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
+    Wire.begin();
+    TWBR = 24; // 400kHz I2C clock (200kHz if CPU is 8MHz)---->Two Wire Bit Rate Generator
+#elif I2CDEV_IMPLEMENTATION == I2CDEV_BUILTIN_FASTWIRE
+    Fastwire::setup(400, true);
+#endif
 
     // initialize serial communication
     //Serial.begin(115200);
@@ -70,15 +70,15 @@ void setup() {
 
     //encoder setup
     //setup encoder 0
-    pinMode(encoder0PinA, INPUT); 
+    pinMode(encoder0PinA, INPUT);
     digitalWrite(encoder0PinA, HIGH);       // turn on pull-up resistor
-    pinMode(encoder0PinB, INPUT); 
+    pinMode(encoder0PinB, INPUT);
     digitalWrite(encoder0PinB, HIGH);       // turn on pull-up resistor
     attachInterrupt(0, doEncoder0, CHANGE);  // encoder pin on interrupt 0 - pin 2
     //setup encoder 1
-    pinMode(encoder1PinA, INPUT); 
+    pinMode(encoder1PinA, INPUT);
     digitalWrite(encoder1PinA, HIGH);       // turn on pull-up resistor
-    pinMode(encoder1PinB, INPUT); 
+    pinMode(encoder1PinB, INPUT);
     digitalWrite(encoder1PinB, HIGH);       // turn on pull-up resistor
     attachInterrupt(1, doEncoder1, CHANGE);  // encoder pin on interrupt 1 - pin 3
 
@@ -129,7 +129,7 @@ const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 //CLOCK VALUES
 long previousMillis = 0;        // will store last time LED was updated
 //long interval = 200;           // interval at which to blink (milliseconds)
-long interval = 200;
+long interval = 1000;
 int counter = 0;
 
 
@@ -143,87 +143,93 @@ const double THETA_MAX = 0.055;
 double deltaLean = 0;
 double deltaVelPWM = 0;
 bool stopping = false;
+double distLeft;
+double distRight;
+bool flag =false;
 
+const int encoderCounts = 32;
 
 
 //motor 1 is the right wheel
 //motor 2 is the left wheel
+int forward = 0;
+double angle = 0.0;
 
 void loop() {
-    
-    unsigned long currentMillis = millis();
+  
+   unsigned long currentMillis = millis();
 
     if(currentMillis - previousMillis > interval) {
         previousMillis = currentMillis;
-
-        if(counter == 25){
-          theta_ref = 0.06;
-        }
-        
-        counter++;
-  
-        //encoder stuff
-        int leftEncoderCounts = encoder1Pos;
-        int rightEncoderCounts = encoder0Pos;
-        double distLeft = 2 * PI * leftEncoderCounts / (ENCODERCOUNTS/CIRCUMFERENCE);
-        double distRight = 2 * PI * rightEncoderCounts / (ENCODERCOUNTS/CIRCUMFERENCE);
-    
-        double distAverage = (distLeft + distRight) / 2; //calcualte delta distance (for both wheels)
-        double thetaChange = (distLeft - distAverage) / WHEELBASE; //calculate delta theta 
-    
-        //add new values to global variable
-        theta = theta + thetaChange;
-        xLocation = xLocation + (distAverage * cos(theta));
-        yLocation = yLocation + (distAverage * sin(theta));
-
-
-        if (distAverage >= 4){
-          theta_ref = -0.03;
-          stopping = true;
+        forward ++;
+        }else{
+        if(forward == 1){
+           dist_two();
+          if(abs(theta) <= 0.325){    // 0.65  = 90 degree
+           left_turn();
+          }else{
+           balance();
+             }
+        }else{
+          balance();
+          theta= 0;
         }
 
-        if (stopping){
-          if (distAverage <= 2){
-            theta_ref = 0.0;
-          }
-        }
-
-
-//        Serial.print("Distance Avg: ");
-//        Serial.println(distAverage);
-
-        //lean forward or backward
-//        deltaLean = -Kvelocity*distAverage;
-//        deltaVelPWM = -KvPWM*distAverage;
-//        theta_ref += deltaLean;
-
-//        if (theta_ref >= THETA_MAX){
-//          theta_ref = THETA_MAX;
-//        } else if (theta_ref <= -THETA_MAX){
-//          theta_ref = -THETA_MAX;
-//        }
-
-//        Serial.print("Encoder 0: ");
-//        Serial.print(encoder0Pos);
-//        Serial.print(", Encoder 1: ");
-//        Serial.println(encoder1Pos);
-
-        encoder0Pos = 0;
-        encoder1Pos = 0;
-//    
-//        Serial.print("[x = ");
-//        Serial.print(xLocation);
-//        Serial.print(", y = ");
-//        Serial.print(yLocation);
-//        Serial.print(", theta = ");
-//        Serial.print(theta);
-//        Serial.println("]");
-//
-//        //adjust PWM for Y direction (forward backwards)
-//        //PWM -= yLocation * MULTIPLIER //this is easy, just accelerate forward or back
     }
 
+}
 
+
+/* See this expanded function to get a better understanding of the
+ * meanings of the four possible (pinA, pinB) value pairs:
+ */
+//right wheel
+void doEncoder0() {
+    A0_read = digitalRead(encoder0PinA);
+    bool current_B = digitalRead(encoder0PinB);
+    if (current_B != last_B0_read) {
+        if (A0_read == LOW && current_B == LOW) {
+            encoder0Pos = encoder0Pos - 1;
+            void dist_Change_Minus_left();
+        } else if (A0_read == LOW && current_B == HIGH) {
+            encoder0Pos = encoder0Pos + 1;
+            dist_Change_Plus_left();
+        } else if (A0_read == HIGH && current_B == LOW) {
+            encoder0Pos = encoder0Pos + 1;
+            dist_Change_Plus_left();
+        } else {
+            encoder0Pos = encoder0Pos - 1;
+            void dist_Change_Minus_left();
+        }
+
+        last_B0_read = current_B;
+    }
+}
+
+//left wheel
+void doEncoder1() {
+    A1_read = digitalRead(encoder1PinA);
+    bool current_B = digitalRead(encoder1PinB);
+    if (current_B != last_B1_read) {
+        if (A1_read == LOW && current_B == LOW) {
+            encoder1Pos = encoder1Pos - 1;
+            dist_Change_Minus_right();
+        } else if (A1_read == LOW && current_B == HIGH) {
+            encoder1Pos = encoder1Pos + 1;
+            dist_Change_Plus_right();
+        } else if (A1_read == HIGH && current_B == LOW) {
+            encoder1Pos = encoder1Pos + 1;
+            dist_Change_Plus_right();
+        } else {
+            encoder1Pos = encoder1Pos - 1;
+            dist_Change_Minus_right();
+        }
+
+        last_B1_read = current_B;
+    }
+}
+
+void balance() {
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
     double raw_angle = atan2(ay,az);
 
@@ -260,44 +266,107 @@ void loop() {
 }
 
 
+void dist_Change_Plus_left(){
+    distLeft += 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
+  }
 
-/* See this expanded function to get a better understanding of the
- * meanings of the four possible (pinA, pinB) value pairs:
- */
-//right wheel
-void doEncoder0(){
-    A0_read = digitalRead(encoder0PinA);
-    bool current_B = digitalRead(encoder0PinB);
-    if (current_B != last_B0_read) {
-        if(A0_read == LOW && current_B == LOW){
-          encoder0Pos = encoder0Pos - 1;
-        } else if (A0_read == LOW && current_B == HIGH){
-          encoder0Pos = encoder0Pos + 1;
-        } else if (A0_read == HIGH && current_B == LOW){
-          encoder0Pos = encoder0Pos + 1;
-        } else {
-          encoder0Pos = encoder0Pos - 1;
-        }
-          
-        last_B0_read = current_B;
-    }
+void dist_Change_Minus_left(){
+    distLeft +=- 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
 }
 
-//left wheel
-void doEncoder1(){
-    A1_read = digitalRead(encoder1PinA);
-    bool current_B = digitalRead(encoder1PinB);
-    if (current_B != last_B1_read) {
-      if(A1_read == LOW && current_B == LOW){
-          encoder1Pos = encoder1Pos - 1;
-        } else if (A1_read == LOW && current_B == HIGH){
-          encoder1Pos = encoder1Pos + 1;
-        } else if (A1_read == HIGH && current_B == LOW){
-          encoder1Pos = encoder1Pos + 1;
-        } else {
-          encoder1Pos = encoder1Pos - 1;
-        }
-        
-        last_B1_read = current_B;
-    }
+void dist_Change_Plus_right(){
+  distRight += 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
 }
+
+void dist_Change_Minus_right(){
+  distRight +=- 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
+}
+
+void dist_two(){
+    //add new values to global variable
+   if(distLeft != 0 || distRight != 0){
+   // Serial.print(distRight);
+    double distAverage = (distLeft + distRight) / 2;
+    double thetaChange = (distLeft - distAverage)/ WHEELBASE;
+    theta = theta + thetaChange;
+    xLocation = xLocation + (distAverage * cos(theta));
+    distLeft = distRight = 0;
+    Serial.println(theta);
+  }
+
+
+}
+void left_turn(){
+    mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    double raw_angle = atan2(ay, az);
+
+    double angle_err = raw_angle + theta_ref;
+    double angular_rate = ((double)gx) / 131.0 - gyro_off;
+    double deltaPWM = -Kangle * angle_err - Bangle * angular_rate;
+    PWMout += deltaPWM;// + deltaVelPWM;
+    deltaVelPWM = 0;
+
+    int PWMint = (int)PWMout;
+
+    if (use_torque) {
+        if (PWMint > 0) {
+            pwm_l = -PWMint - torque_stall_l;
+            pwm_r = PWMint + torque_stall_r;
+        } else {
+            pwm_l = -PWMint + torque_stall_l;
+            pwm_r = PWMint - torque_stall_r;
+        }
+    } else {
+        pwm_l = -PWMint;
+        pwm_r = PWMint;
+    }
+
+    if (PWMint >= PWMMAX) {
+        PWMint = PWMMAX;
+    }
+    else if (PWMint <= -PWMMAX) {
+        PWMint = -PWMMAX;
+    }
+
+    md.setM1Speed(pwm_r/3+100);
+    md.setM2Speed(pwm_l/3+100);
+  
+}
+
+void right_turn(){
+  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    double raw_angle = atan2(ay, az);
+
+    double angle_err = raw_angle + theta_ref;
+    double angular_rate = ((double)gx) / 131.0 - gyro_off;
+    double deltaPWM = -Kangle * angle_err - Bangle * angular_rate;
+    PWMout += deltaPWM;// + deltaVelPWM;
+    deltaVelPWM = 0;
+
+    int PWMint = (int)PWMout;
+
+    if (use_torque) {
+        if (PWMint > 0) {
+            pwm_l = -PWMint - torque_stall_l;
+            pwm_r = PWMint + torque_stall_r;
+        } else {
+            pwm_l = -PWMint + torque_stall_l;
+            pwm_r = PWMint - torque_stall_r;
+        }
+    } else {
+        pwm_l = -PWMint;
+        pwm_r = PWMint;
+    }
+
+    if (PWMint >= PWMMAX) {
+        PWMint = PWMMAX;
+    }
+    else if (PWMint <= -PWMMAX) {
+        PWMint = -PWMMAX;
+    }
+
+    md.setM1Speed(pwm_r/3-100);
+    md.setM2Speed(pwm_l/3-100);
+}
+
+
