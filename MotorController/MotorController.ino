@@ -147,8 +147,6 @@ double distLeft;
 double distRight;
 bool flag =false;
 
-const int encoderCounts = 32;
-
 
 //motor 1 is the right wheel
 //motor 2 is the left wheel
@@ -165,7 +163,7 @@ void loop() {
         }else{
         if(forward == 1){
            dist_two();
-          if(abs(theta) <= 0.325){    // 0.65  = 90 degree
+          if(abs(theta) <= 1.91){    // 0.65  = 90 degree
            left_turn();
           }else{
            balance();
@@ -267,24 +265,23 @@ void balance() {
 
 
 void dist_Change_Plus_left(){
-    distLeft += 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
+    distLeft += 2 * 1 * 1 / (ENCODERCOUNTS/CIRCUMFERENCE);
   }
 
 void dist_Change_Minus_left(){
-    distLeft +=- 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
+    distLeft +=- 2 * 1 * 1 / (ENCODERCOUNTS/CIRCUMFERENCE);
 }
 
 void dist_Change_Plus_right(){
-  distRight += 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
+  distRight += 2 * 1 * 1 / (ENCODERCOUNTS/CIRCUMFERENCE);
 }
 
 void dist_Change_Minus_right(){
-  distRight +=- 2 * 1 * 1 / (encoderCounts/CIRCUMFERENCE);
+  distRight +=- 2 * 1 * 1 / (ENCODERCOUNTS/CIRCUMFERENCE);
 }
 
 void dist_two(){
     //add new values to global variable
-   if(distLeft != 0 || distRight != 0){
    // Serial.print(distRight);
     double distAverage = (distLeft + distRight) / 2;
     double thetaChange = (distLeft - distAverage)/ WHEELBASE;
@@ -292,10 +289,8 @@ void dist_two(){
     xLocation = xLocation + (distAverage * cos(theta));
     distLeft = distRight = 0;
     Serial.println(theta);
-  }
-
-
 }
+
 void left_turn(){
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
     double raw_angle = atan2(ay, az);
