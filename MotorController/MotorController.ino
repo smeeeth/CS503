@@ -122,8 +122,8 @@ double theta = 0;
 double xLocation = 0;
 double yLocation = 0;
 const int ENCODERCOUNTS = 32;
-const double CIRCUMFERENCE = 10; //PLACEHOLDER: circumference of one wheel
-const double WHEELBASE = 20; //PLACEHOLDER: distance between wheels and center (must be in same units as circumference, and input for challenge)
+const double CIRCUMFERENCE = 17.9542020153; //PLACEHOLDER: circumference of one wheel
+const double WHEELBASE = 10.16; //PLACEHOLDER: distance between wheels and center (must be in same units as circumference, and input for challenge)
 const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 
 //CLOCK VALUES
