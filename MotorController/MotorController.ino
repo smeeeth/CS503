@@ -98,7 +98,7 @@ void setup() {
 //BALANCER VALUES
 int pwm_r = 0;
 int pwm_l = 0;
-int PWMMAX = 300;
+int PWMMAX = 400;
 double theta_ref = 0.0; //0.035
 double gyro_off = 0.44;
 double Kangle = 2.7; //0.7
@@ -128,7 +128,7 @@ const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 //CLOCK VALUES
 long previousMillis = 0;        // will store last time LED was updated
 //long interval = 200;           // interval at which to blink (milliseconds)
-long interval = 100;
+long interval = 50;
 
 
 
@@ -165,16 +165,20 @@ double distToGo = 0.0;
 double v_diff = 0.0;
 const double TRANSLATE_MAX = 50;
 double theta_change = 0.0;
-double Ktheta = 0.001;
-double Btheta = 0.012;
+double Ktheta = 0.0055;
+double Btheta = 0.0366;
 bool accelerate = false;
 
-double x_goal = 50.0;
-double L_stick = 20.0;
+double x_goal = 100.0;
+double L_stick = 4.0;
 bool do_balance = true;
 bool stopped = false;
 int counter = 0;
 double dist_to_goal = 0.0;
+//double accel = 0.0;
+double past_vel = 0.0;
+int right = 0, left = 0;
+bool use_t = true;
 
 void loop() {
   
@@ -185,26 +189,26 @@ void loop() {
         previousMillis = currentMillis;
         dist_two();
 
-        counter++;
         accelerate = true;
 
-        Serial.print("Theta_ref: ");
-        printDouble(theta_ref, 4);
-        Serial.print(", Location: ");
-        Serial.print(xLocation);
-        Serial.print(", dist_to_goal: ");
-        Serial.print(x_goal-xLocation);
-        Serial.print(", Velocity: ");
-        Serial.println(velocity);
+//        if (abs(theta) > 0.015){
+//            left = theta*1000;
+//            right = -theta*1000;
+//        }
 
-//        if (counter < 20){
-//            theta_ref = Ktheta*(0) + -Btheta*velocity; //goal - xlocation
-//        }
-//        if (counter == 20){
-//            accelerate = true;
-//        }
+//        Serial.print("Theta_ref: ");
+//        printDouble(theta_ref, 4);
+//        Serial.print(", Location: ");
+//        Serial.print(xLocation);
+//        Serial.print(", dist_to_goal: ");
+//        Serial.print(x_goal-xLocation);
+//        Serial.print(", Velocity: ");
+//        Serial.println(velocity);
 
         if (accelerate){
+
+          accel = velocity - past_vel;
+          past_vel = velocity;
 
           dist_to_goal = x_goal-xLocation;
 
@@ -213,6 +217,20 @@ void loop() {
           } else if (dist_to_goal < 0 && abs(dist_to_goal) > L_stick){
               dist_to_goal = -L_stick;
           }
+
+          if (dist_to_goal < 2.0){
+              counter++;
+          }
+          if (counter < 10){
+              theta_ref += 0.01;
+          } else {
+              theta_ref = 0.0;
+              //x_goal += 10.0;
+              counter = 0;
+          }
+
+//          Serial.print("Dist: ");
+//          Serial.println(dist_to_goal);
           
           theta_ref = Ktheta*(dist_to_goal) + -Btheta*velocity; //goal - xlocation
             
@@ -226,7 +244,7 @@ void loop() {
     }
 
     if (do_balance){
-        balance();
+        balance(left, right, use_t);
     } else {
         left_turn();
     }
@@ -284,7 +302,8 @@ void doEncoder1() {
     }
 }
 
-void balance() {
+void balance(int left, int right, bool use_t) {
+    use_torque = use_t;
     mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
     double raw_angle = atan2(ay,az);
 
@@ -317,8 +336,8 @@ void balance() {
       PWMint = -PWMMAX;
     }
 
-    md.setM1Speed(pwm_r);
-    md.setM2Speed(pwm_l); 
+    md.setM1Speed(pwm_r + right);
+    md.setM2Speed(pwm_l + left); 
 }
 
 
