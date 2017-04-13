@@ -128,7 +128,7 @@ const double MULTIPLER = 5; //multiplier to amplify distance from point into PWM
 //CLOCK VALUES
 long previousMillis = 0;        // will store last time LED was updated
 //long interval = 200;           // interval at which to blink (milliseconds)
-long interval = 350;
+long interval = 100;
 
 
 
@@ -136,8 +136,8 @@ long interval = 350;
 int error_right = 0;
 int error_left = 0;
 double velocity = 0;
-const double THETA_MAX_FORWARD = 0.08;
-const double THETA_MAX_BACKWARD = -0.045;
+const double THETA_MAX_FORWARD = 0.13;
+const double THETA_MAX_BACKWARD = -0.13;
 
 bool stopping = false;
 double distLeft;
@@ -165,14 +165,16 @@ double distToGo = 0.0;
 double v_diff = 0.0;
 const double TRANSLATE_MAX = 50;
 double theta_change = 0.0;
-double Ktheta = 0.25;
-double Btheta = 0.12;
+double Ktheta = 0.001;
+double Btheta = 0.012;
 bool accelerate = false;
 
-double x_goal = 180.0;
-double L_stick = 4.0;
+double x_goal = 50.0;
+double L_stick = 20.0;
 bool do_balance = true;
+bool stopped = false;
 int counter = 0;
+double dist_to_goal = 0.0;
 
 void loop() {
   
@@ -184,34 +186,43 @@ void loop() {
         dist_two();
 
         counter++;
+        accelerate = true;
 
-      
+        Serial.print("Theta_ref: ");
+        printDouble(theta_ref, 4);
+        Serial.print(", Location: ");
+        Serial.print(xLocation);
+        Serial.print(", dist_to_goal: ");
+        Serial.print(x_goal-xLocation);
+        Serial.print(", Velocity: ");
+        Serial.println(velocity);
 
-        if (counter < 10){
-            theta_ref = Ktheta*(0) + -Btheta*velocity; //goal - xlocation
-        }
-        if (counter == 10){
-            accelerate = true;
-        }
+//        if (counter < 20){
+//            theta_ref = Ktheta*(0) + -Btheta*velocity; //goal - xlocation
+//        }
+//        if (counter == 20){
+//            accelerate = true;
+//        }
 
         if (accelerate){
-            double dist_to_goal = x_goal-xLocation;
-            if (dist_to_goal > L_stick){
-                dist_to_goal = L_stick;
-            }
-            theta_ref = Ktheta*((dist_to_goal) - xLocation) + -Btheta*velocity; //goal - xlocation
 
-            Serial.print("Location: ");
-            Serial.print(xLocation);
-            Serial.print(", dist_to_goal: ");
-            Serial.println(x_goal-xLocation);
+          dist_to_goal = x_goal-xLocation;
+
+          if (dist_to_goal > L_stick){
+              dist_to_goal = L_stick;
+          } else if (dist_to_goal < 0 && abs(dist_to_goal) > L_stick){
+              dist_to_goal = -L_stick;
+          }
+          
+          theta_ref = Ktheta*(dist_to_goal) + -Btheta*velocity; //goal - xlocation
+            
         }
 
-        if (theta_ref >= THETA_MAX_FORWARD){
-            theta_ref = THETA_MAX_FORWARD;
-        } else if (theta_ref <= THETA_MAX_BACKWARD){
-            theta_ref = THETA_MAX_BACKWARD;
-        }
+//        if (theta_ref >= THETA_MAX_FORWARD){
+//            theta_ref = THETA_MAX_FORWARD;
+//        } else if (theta_ref <= THETA_MAX_BACKWARD){
+//            theta_ref = THETA_MAX_BACKWARD;
+//        }
     }
 
     if (do_balance){
