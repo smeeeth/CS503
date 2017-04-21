@@ -1,7 +1,7 @@
 #include "I2Cdev.h"
 #include "MPU6050_6Axis_MotionApps20.h"
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
-#include "Wire.h"
+  #include "Wire.h"
 #endif
 #include "DualMC33926MotorShield.h"
 
@@ -13,6 +13,9 @@ DualMC33926MotorShield md;
 #define encoder0PinB  5
 #define encoder1PinA  3
 #define encoder1PinB  6
+
+//print flag = 0 DONT PRINT, = 1 PRINT
+volatile bool printFlag = 0;
 
 volatile int encoder0Pos = 0;
 volatile int encoder1Pos = 0;
@@ -213,20 +216,22 @@ void loop() {
           dist_to_goal = x_goal-xLocation;
 
           if (dist_to_goal > L_stick){
-              dist_to_goal = L_stick;
-          } else if (dist_to_goal < 0 && abs(dist_to_goal) > L_stick){
-              dist_to_goal = -L_stick;
+            dist_to_goal = L_stick;
+          }
+          else if (dist_to_goal < 0 && abs(dist_to_goal) > L_stick){
+            dist_to_goal = -L_stick;
           }
 
           if (dist_to_goal < 2.0){
-              counter++;
+            counter++;
           }
           if (counter < 10){
-              theta_ref += 0.01;
-          } else {
-              theta_ref = 0.0;
-              //x_goal += 10.0;
-              counter = 0;
+            theta_ref += 0.01;
+          }
+          else {
+            theta_ref = 0.0;
+            //x_goal += 10.0;
+            counter = 0;
           }
 
 //          Serial.print("Dist: ");
@@ -244,9 +249,10 @@ void loop() {
     }
 
     if (do_balance){
-        balance(left, right, use_t);
-    } else {
-        left_turn();
+      balance(left, right, use_t);
+    } 
+    else {
+      left_turn();
     }
 
     
@@ -421,11 +427,13 @@ void right_turn(){
         if (PWMint > 0) {
             pwm_l = -PWMint - torque_stall_l;
             pwm_r = PWMint + torque_stall_r;
-        } else {
+        }
+        else {
             pwm_l = -PWMint + torque_stall_l;
             pwm_r = PWMint - torque_stall_r;
         }
-    } else {
+    }
+    else {
         pwm_l = -PWMint;
         pwm_r = PWMint;
     }
@@ -538,4 +546,8 @@ void printDouble( double val, byte precision){
 //    balance();
 //}
 
+void print(char str[]){
+  if (printFlag)
+    printf(str);
+}
 
